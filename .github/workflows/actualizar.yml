@@ -1,0 +1,166 @@
+# ==========================================================
+# GitHub Actions
+#
+# Ejecuta automáticamente actualizar.py para verificar si
+# existe un nuevo sorteo de La Tinka.
+#
+# Si existe un nuevo sorteo:
+#   - Actualiza sorteos.txt
+#   - Hace commit
+#   - Hace push al repositorio
+#
+# Autor:
+#     Carlos + ChatGPT
+# ==========================================================
+
+name: Tinka Auto Update
+
+permissions:
+
+  contents: write
+
+on:
+
+  # Permite ejecutar el flujo manualmente desde GitHub.
+  workflow_dispatch:
+
+  # Ejecución automática mediante horario.
+  schedule:
+
+    # Todos los días a las 22:15 (hora de Perú)
+    - cron: '15 3 * * *'
+
+    # Todos los días a las 22:30
+    - cron: '30 3 * * *'
+
+    # Todos los días a las 22:45
+    - cron: '45 3 * * *'
+
+    # Todos los días a las 23:00
+    - cron: '0 4 * * *'
+
+    # Todos los días a las 23:15
+    - cron: '15 4 * * *'
+
+    # Todos los días a las 23:30
+    - cron: '30 4 * * *'
+
+    # Todos los días a las 23:45
+    - cron: '45 4 * * *'
+
+    # Todos los días a las 23:59
+    - cron: '59 4 * * *'
+
+# ==========================================================
+# Trabajo principal
+# ==========================================================
+jobs:
+
+  actualizar:
+
+    # Nombre que aparecerá en GitHub Actions.
+    name: Actualizar sorteos
+
+    # Sistema operativo donde se ejecutará.
+    runs-on: ubuntu-latest
+
+    # Pasos que ejecutará el servidor.
+    steps:
+
+      # ------------------------------------------------------
+      # Descargar el contenido del repositorio.
+      # ------------------------------------------------------
+      - name: Descargar repositorio
+
+        uses: actions/checkout@v4
+
+        with:
+
+          fetch-depth: 0
+
+
+      # ------------------------------------------------------
+      # Instalar Python.
+      # ------------------------------------------------------
+      - name: Instalar Python
+
+        uses: actions/setup-python@v5
+
+        with:
+
+          # Versión de Python utilizada por el proyecto.
+          python-version: '3.13'
+
+      # ------------------------------------------------------
+      # Instalar las librerías necesarias.
+      # ------------------------------------------------------
+      - name: Instalar dependencias
+
+        run: |
+          
+          python -m pip install --upgrade pip
+          
+          pip install -r requirements.txt
+
+      # ------------------------------------------------------
+      # Ejecutar el programa principal.
+      # ------------------------------------------------------
+      - name: Ejecutar actualización
+
+        run: |
+
+          python actualizar.py
+
+      # ------------------------------------------------------
+      # Configurar Git para poder realizar commits.
+      # ------------------------------------------------------
+      - name: Configurar Git
+
+        run: |
+
+          git config user.name "github-actions[bot]"
+
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # ------------------------------------------------------
+      # Verificar si hubo cambios en el repositorio.
+      # ------------------------------------------------------
+      - name: Verificar cambios
+
+        id: cambios
+
+        run: |
+
+          if git diff --quiet; then
+
+            echo "hay_cambios=false" >> $GITHUB_OUTPUT
+
+          else
+
+            echo "hay_cambios=true" >> $GITHUB_OUTPUT
+
+          fi
+
+      # ------------------------------------------------------
+      # Crear un commit únicamente si hubo cambios.
+      # ------------------------------------------------------
+      - name: Crear commit
+
+        if: steps.cambios.outputs.hay_cambios == 'true'
+
+        run: |
+
+          git add .
+
+          git commit -m "Actualizar sorteos automáticamente"
+
+      # ------------------------------------------------------
+      # Enviar el commit al repositorio.
+      # ------------------------------------------------------
+      - name: Enviar cambios
+
+        if: steps.cambios.outputs.hay_cambios == 'true'
+
+        run: |
+
+          git push

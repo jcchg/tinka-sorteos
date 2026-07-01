@@ -11,10 +11,9 @@ import requests
 from bs4 import BeautifulSoup
 import re
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 
 URL = "https://www.tinkaresultados.com/"
-"""RUTA_ARCHIVO = "pruebas/sorteos.txt" """
 RUTA_ARCHIVO = "sorteos.txt"
 
 
@@ -123,35 +122,6 @@ def obtener_ultima_fecha(lineas):
 
     return partes[1]
 
-# ==========================================================
-# Agrega un nuevo sorteo al final del archivo.
-#
-# Parámetros:
-#     lineas (list): Las seis líneas del nuevo sorteo.
-#
-# Retorna:
-#     True  -> Archivo actualizado.
-#     False -> Ocurrió un error.
-# ==========================================================
-def agregar_sorteo(lineas):
-
-    try:
-
-        with open(RUTA_ARCHIVO, "a", encoding="utf-8") as archivo:
-
-            for linea in lineas:
-                archivo.write("\n")
-                archivo.write(linea)
-
-        return True
-
-    except Exception as e:
-
-        error(e)
-
-        return False
-
-
 
 def main():
     print("=" * 50)
@@ -209,9 +179,21 @@ def main():
         print("No hubo ganador del pozo principal.")
 
     lineas = crear_lineas_sorteo(numeros, fecha, ganador)
+    # ==========================================================
+    # Crear el mensaje que utilizará GitHub para el commit.
+    #
+    # Ejemplo:
+    #     Tinka 1311 - 28/06/2026
+    # ==========================================================
+    mensaje_commit = f"Tinka {sorteo} - {fecha}"
+
+    with open("commit_message.txt", "w", encoding="utf-8") as archivo:
+
+        archivo.write(mensaje_commit)
 
     print()
     ok("Líneas generadas.")
+
     for linea in lineas:
         print(linea)
 
@@ -224,25 +206,6 @@ def main():
 
     print(f"Última fecha del archivo : {fecha_archivo}")
     print(f"Fecha encontrada en web  : {fecha}")
-
-    """--------------------------------"""
-    print()
-
-    if fecha_archivo == fecha:
-
-        ok("El archivo ya está actualizado.")
-
-    else:
-
-        info("Se encontró un nuevo sorteo.")
-
-        if agregar_sorteo(lineas):
-
-            ok("Nuevo sorteo agregado correctamente.")
-
-        else:
-
-            error("No fue posible actualizar sorteos.txt")
 
 
 if __name__ == "__main__":
