@@ -207,6 +207,31 @@ def main():
     print(f"Última fecha del archivo : {fecha_archivo}")
     print(f"Fecha encontrada en web  : {fecha}")
 
+        # Si no se pudo obtener la última fecha del archivo, detener.
+        if fecha_archivo is None:
+            error("No fue posible obtener la última fecha de sorteos.txt.")
+            return
+
+        # Si la fecha web ya existe en el archivo, no hay nada que actualizar.
+        if fecha == fecha_archivo:
+            print()
+            ok("El archivo ya está actualizado.")
+            return
+
+        # Si la fecha web es distinta, se agregan las 6 líneas al final del archivo.
+        try:
+            with open(RUTA_ARCHIVO, "a", encoding="utf-8") as archivo:
+                for linea in lineas:
+                    archivo.write("\n" + linea)
+
+            print()
+            ok("Nuevo sorteo agregado a sorteos.txt.")
+
+        except Exception as e:
+            print()
+            error(f"No se pudo actualizar sorteos.txt: {e}")
+            return
+
 
 if __name__ == "__main__":
     main()
