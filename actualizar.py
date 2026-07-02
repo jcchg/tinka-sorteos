@@ -289,9 +289,19 @@ def main():
 
     # Si la fecha web es distinta, se agregan las 6 líneas al final del archivo.
     try:
-        with open(RUTA_ARCHIVO, "a", encoding="utf-8") as archivo:
-            for linea in lineas:
-                archivo.write("\n" + linea)
+        with open(RUTA_ARCHIVO, "a+", encoding="utf-8") as archivo:
+            archivo.seek(0, 2)  # ir al final del archivo
+            tamaño = archivo.tell()
+
+            # Solo agregar salto de línea si el archivo no está vacío
+            # y no termina ya con salto de línea.
+            if tamaño > 0:
+                archivo.seek(tamaño - 1)
+                ultimo = archivo.read(1)
+                if ultimo != "\n":
+                    archivo.write("\n")
+
+            archivo.write("\n".join(lineas))
 
         print()
         ok("Nuevo sorteo agregado a sorteos.txt.")
