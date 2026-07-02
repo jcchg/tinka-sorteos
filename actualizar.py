@@ -47,33 +47,32 @@ def obtener_sorteo_y_fecha(html):
     'Tinka Sorteo'. Luego extrae:
         - número de sorteo
         - fecha del sorteo
-
-    Acepta fechas con día/mes de 1 o 2 dígitos:
-        1/07/2026
-        01/07/2026
-        1/7/2026
-        01/07/2026
     """
     soup = BeautifulSoup(html, "html.parser")
-
-    # Buscar todos los h3 y quedarnos con el que realmente contiene
-    # el encabezado del sorteo.
     titulos = soup.find_all("h3")
 
-    for titulo in titulos:
+    print()
+    info(f"H3 encontrados: {len(titulos)}")
+
+    for i, titulo in enumerate(titulos, start=1):
         texto = titulo.get_text(" ", strip=True)
+        print(f"[DEBUG] H3 #{i}: {texto}")
 
         if "Tinka Sorteo" not in texto:
             continue
 
-        # Permitir día y mes de 1 o 2 dígitos.
-        patron = r"Tinka Sorteo\s+(\d+),\s*Fecha:\s*(\d{1,2}/\d{1,2}/\d{4})"
-        resultado = re.search(patron, texto)
+        # Más tolerante: acepta espacios variables y no depende
+        # de que después de la fecha no haya más texto.
+        patron = r"Tinka\s+Sorteo\s+(\d+)\s*,\s*Fecha:\s*(\d{1,2}/\d{1,2}/\d{4})"
+        resultado = re.search(patron, texto, re.IGNORECASE)
 
         if resultado:
             numero_sorteo = int(resultado.group(1))
             fecha = resultado.group(2)
+            print(f"[DEBUG] Coincidencia encontrada: sorteo={numero_sorteo}, fecha={fecha}")
             return numero_sorteo, fecha
+
+        print("[DEBUG] El H3 contiene 'Tinka Sorteo' pero no coincidió con el patrón.")
 
     return None, None
 
