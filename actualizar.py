@@ -42,42 +42,84 @@ def descargar_html():
 
 
 def obtener_sorteo_y_fecha(html):
+    """
+    Busca el bloque principal del sorteo usando como bandera el texto
+    'Tinka Sorteo'. Luego extrae:
+        - número de sorteo
+        - fecha del sorteo
+
+    Acepta fechas con día/mes de 1 o 2 dígitos:
+        1/07/2026
+        01/07/2026
+        1/7/2026
+        01/07/2026
+    """
     soup = BeautifulSoup(html, "html.parser")
-    titulo = soup.find("h3")
-    if titulo is None:
-        return None, None
 
-    texto = titulo.get_text(" ", strip=True)
-    patron = r"Tinka Sorteo\s+(\d+),\s*Fecha:\s*(\d{2}/\d{2}/\d{4})"
-    resultado = re.search(patron, texto)
+    # Buscar todos los h3 y quedarnos con el que realmente contiene
+    # el encabezado del sorteo.
+    titulos = soup.find_all("h3")
 
-    if resultado:
-        return int(resultado.group(1)), resultado.group(2)
+    for titulo in titulos:
+        texto = titulo.get_text(" ", strip=True)
+
+        if "Tinka Sorteo" not in texto:
+            continue
+
+        # Permitir día y mes de 1 o 2 dígitos.
+        patron = r"Tinka Sorteo\s+(\d+),\s*Fecha:\s*(\d{1,2}/\d{1,2}/\d{4})"
+        resultado = re.search(patron, texto)
+
+        if resultado:
+            numero_sorteo = int(resultado.group(1))
+            fecha = resultado.group(2)
+            return numero_sorteo, fecha
 
     return None, None
 
 
 def obtener_numeros(html):
+    """
+    Obtiene los 6 números de la jugada ganadora.
+
+    Estrategia:
+    1. Buscar el h3 que contiene 'Tinka Sorteo'.
+    2. Ir al primer <p> que viene después de ese h3.
+       Ese <p> contiene únicamente los 6 números de la jugada ganadora.
+    3. Ignorar los números del bloque 'Sí o Sí' y 'Boliyapa'.
+    """
     soup = BeautifulSoup(html, "html.parser")
-    titulo = soup.find("h3")
-    if titulo is None:
-        return None
 
-    parrafo = titulo.find_next("p")
-    if parrafo is None:
-        return None
+    titulos = soup.find_all("h3")
 
-    numeros = []
-    for span in parrafo.find_all("span"):
-        t = span.get_text(strip=True)
-        if t.isdigit():
-            numeros.append(int(t))
+    for titulo in titulos:
+        texto = titulo.get_text(" ", strip=True)
 
-    if len(numeros) != 6:
-        return None
+        if "Tinka Sorteo" not in texto:
+            continue
 
-    numeros.sort()
-    return numeros
+        # El primer <p> después del título contiene los 6 números
+        # de la jugada ganadora.
+        parrafo = titulo.find_next("p")
+        if parrafo is None:
+            return None
+
+        numeros = []
+
+        for span in parrafo.find_all("span"):
+            t = span.get_text(strip=True)
+
+            # Aceptar números como 06, 03, etc.
+            if t.isdigit():
+                numeros.append(int(t))
+
+        if len(numeros) != 6:
+            return None
+
+        numeros.sort()
+        return numeros
+
+    return None
 
 
 def obtener_ganador(html):
@@ -121,6 +163,30 @@ def obtener_ultima_fecha(lineas):
         return None
 
     return partes[1]
+
+def normalizar_fecha(fecha):
+    """
+    Convierte una fecha como:
+        1/7/2026
+        1/07/2026
+        01/7/2026
+        01/07/2026
+
+    al formato fijo:
+        dd/mm/yyyy
+    """
+    try:
+        partes = fecha.strip().split("/")
+        if len(partes) != 3:
+            return fecha.strip()
+
+        dia = partes[0].zfill(2)
+        mes = partes[1].zfill(2)
+        anio = partes[2]
+
+        return f"{dia}/{mes}/{anio}"
+    except Exception:
+        return fecha
 
 
 def main():
@@ -178,6 +244,7 @@ def main():
     else:
         print("No hubo ganador del pozo principal.")
 
+    fecha = normalizar_fecha(fecha)
     lineas = crear_lineas_sorteo(numeros, fecha, ganador)
     # ==========================================================
     # Crear el mensaje que utilizará GitHub para el commit.
@@ -204,16 +271,18 @@ def main():
 
     fecha_archivo = obtener_ultima_fecha(lineas_existentes)
 
-    print(f"Última fecha del archivo : {fecha_archivo}")
-    print(f"Fecha encontrada en web  : {fecha}")
+    # Normalizar ambas fechas antes de compararlas
+    fecha_archivo_normalizada = normalizar_fecha(fecha_archivo) if fecha_archivo else None
+    fecha_web_normalizada = normalizar_fecha(fecha)
 
-        # Si no se pudo obtener la última fecha del archivo, detener.
-        if fecha_archivo is None:
+    print(f"Última fecha del archivo : {fecha_archivo_normalizada}")
+    print(f"Fecha encontrada en web  : {fecha_web_normalizada}")
+
+        if fecha_archivo_normalizada is None:
             error("No fue posible obtener la última fecha de sorteos.txt.")
             return
 
-        # Si la fecha web ya existe en el archivo, no hay nada que actualizar.
-        if fecha == fecha_archivo:
+        if fecha_web_normalizada == fecha_archivo_normalizada:
             print()
             ok("El archivo ya está actualizado.")
             return
