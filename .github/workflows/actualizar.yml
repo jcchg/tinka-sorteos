@@ -26,6 +26,8 @@ on:
 
   # Ejecución automática mediante horario.
   schedule:
+    # Todos los días a las 08:00 a. m. (hora de Perú)
+    - cron: '0 13 * * *'
 
     # Todos los días a las 22:15 (hora de Perú)
     - cron: '15 3 * * *'
