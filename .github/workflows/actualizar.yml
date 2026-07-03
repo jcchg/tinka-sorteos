@@ -16,7 +16,6 @@
 name: Tinka Auto Update
 
 permissions:
-
   contents: write
 
 on:
@@ -73,23 +72,16 @@ jobs:
       # Descargar el contenido del repositorio.
       # ------------------------------------------------------
       - name: Descargar repositorio
-
         uses: actions/checkout@v4
-
         with:
-
           fetch-depth: 0
-
 
       # ------------------------------------------------------
       # Instalar Python.
       # ------------------------------------------------------
       - name: Instalar Python
-
         uses: actions/setup-python@v5
-
         with:
-
           # Versión de Python utilizada por el proyecto.
           python-version: '3.13'
 
@@ -97,72 +89,90 @@ jobs:
       # Instalar las librerías necesarias.
       # ------------------------------------------------------
       - name: Instalar dependencias
-
         run: |
-          
           python -m pip install --upgrade pip
-          
           pip install -r requirements.txt
+
+      # ------------------------------------------------------
+      # Mostrar información de diagnóstico del runner.
+      # Sirve para verificar:
+      # - si fue ejecución manual o programada
+      # - hora UTC real del servidor
+      # - rama y commit usados
+      # ------------------------------------------------------
+      - name: Mostrar diagnóstico del runner
+        run: |
+          echo "=========================================="
+          echo "DIAGNÓSTICO DEL WORKFLOW"
+          echo "=========================================="
+          echo "Evento que disparó el workflow:"
+          echo "$GITHUB_EVENT_NAME"
+          echo ""
+          echo "Fecha UTC actual:"
+          date -u
+          echo ""
+          echo "Fecha local del runner:"
+          date
+          echo ""
+          echo "Rama actual:"
+          git branch --show-current
+          echo ""
+          echo "Commit actual:"
+          git rev-parse HEAD
+          echo "=========================================="
 
       # ------------------------------------------------------
       # Ejecutar el programa principal.
       # ------------------------------------------------------
       - name: Ejecutar actualización
-
         run: |
-
           python actualizar.py
 
       # ------------------------------------------------------
       # Configurar Git para poder realizar commits.
       # ------------------------------------------------------
       - name: Configurar Git
-
         run: |
-
           git config user.name "github-actions[bot]"
-
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       # ------------------------------------------------------
       # Verificar si hubo cambios en el repositorio.
+      # Se usa git status --porcelain porque detecta de forma
+      # más confiable si sorteos.txt fue modificado.
       # ------------------------------------------------------
       - name: Verificar cambios
-
         id: cambios
-
         run: |
+          echo "=========================================="
+          echo "ESTADO DEL REPOSITORIO"
+          echo "=========================================="
+          git status --short
+          echo "=========================================="
 
-          if git diff --quiet; then
-
-            echo "hay_cambios=false" >> $GITHUB_OUTPUT
-
-          else
-
+          if [[ -n "$(git status --porcelain)" ]]; then
             echo "hay_cambios=true" >> $GITHUB_OUTPUT
-
+            echo "Se detectaron cambios en el repositorio."
+          else
+            echo "hay_cambios=false" >> $GITHUB_OUTPUT
+            echo "No se detectaron cambios en el repositorio."
           fi
 
       # ------------------------------------------------------
       # Crear un commit únicamente si hubo cambios.
+      # Solo se agrega sorteos.txt para evitar subir archivos
+      # no deseados por accidente.
       # ------------------------------------------------------
       - name: Crear commit
-
         if: steps.cambios.outputs.hay_cambios == 'true'
-
         run: |
-
-          git add .
-
+          git add sorteos.txt
           git commit -m "Actualizar sorteos automáticamente"
 
       # ------------------------------------------------------
       # Enviar el commit al repositorio.
       # ------------------------------------------------------
       - name: Enviar cambios
-
         if: steps.cambios.outputs.hay_cambios == 'true'
-
         run: |
-
           git push
