@@ -24,33 +24,43 @@ on:
   workflow_dispatch:
 
   # Ejecución automática mediante horario.
-  schedule:
+  schedule:    
     # Todos los días a las 08:00 a. m. (hora de Perú)
     - cron: '0 13 * * *'
 
+    # Revisión nocturna desde las 10:30 p. m. hasta las 11:45 p. m. (hora de Perú)
+    - cron: '30,45 3 * * *'
+    - cron: '0,15,30,45 4 * * *'
+
+    # Revisión final a las 11:59 p. m. (hora de Perú)
+    - cron: '59 4 * * *'
+    # Todos los días a las 08:00 a. m. (hora de Perú)
+    - cron: '0 13 * * *'
+
+
     # Todos los días a las 22:15 (hora de Perú)
-    - cron: '15 3 * * *'
+    #- cron: '15 3 * * *'
 
     # Todos los días a las 22:30
-    - cron: '30 3 * * *'
+    #- cron: '30 3 * * *'
 
     # Todos los días a las 22:45
-    - cron: '45 3 * * *'
+    #- cron: '45 3 * * *'
 
     # Todos los días a las 23:00
-    - cron: '0 4 * * *'
+    #- cron: '0 4 * * *'
 
     # Todos los días a las 23:15
-    - cron: '15 4 * * *'
+    #- cron: '15 4 * * *'
 
     # Todos los días a las 23:30
-    - cron: '30 4 * * *'
+    #- cron: '30 4 * * *'
 
     # Todos los días a las 23:45
-    - cron: '45 4 * * *'
+    #- cron: '45 4 * * *'
 
     # Todos los días a las 23:59
-    - cron: '59 4 * * *'
+    #- cron: '59 4 * * *'
 
 # ==========================================================
 # Trabajo principal
