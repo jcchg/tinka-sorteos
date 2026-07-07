@@ -29,8 +29,13 @@ on:
     - cron: '0 13 * * *'
 
     # Revisión nocturna desde las 10:30 p. m. hasta las 11:45 p. m. (hora de Perú)
-    - cron: '30,45 3 * * *'
-    - cron: '0,15,30,45 4 * * *'
+    - cron: '30,45 22 * * *'
+    - cron: '0,15,30,45 23 * * *'
+    - cron: '0,15,30,45 0 * * *'
+
+    # Revisión nocturna desde las 10:30 p. m. hasta las 11:45 p. m. (hora de Perú)
+    #- cron: '30,45 3 * * *'
+    #- cron: '0,15,30,45 4 * * *'
 
     # Revisión final a las 11:59 p. m. (hora de Perú)
     - cron: '59 4 * * *'
@@ -151,7 +156,7 @@ jobs:
       # Se usa git status --porcelain porque detecta de forma
       # más confiable si sorteos.txt fue modificado.
       # ------------------------------------------------------
-      - name: Verificar cambios
+      - name: Verificar cambios en sorteos.txt
         id: cambios
         run: |
           echo "=========================================="
@@ -160,12 +165,12 @@ jobs:
           git status --short
           echo "=========================================="
 
-          if [[ -n "$(git status --porcelain)" ]]; then
-            echo "hay_cambios=true" >> $GITHUB_OUTPUT
-            echo "Se detectaron cambios en el repositorio."
-          else
+          if git diff --quiet -- sorteos.txt; then
             echo "hay_cambios=false" >> $GITHUB_OUTPUT
-            echo "No se detectaron cambios en el repositorio."
+            echo "sorteos.txt no cambió."
+          else
+            echo "hay_cambios=true" >> $GITHUB_OUTPUT
+            echo "sorteos.txt fue modificado."
           fi
 
       # ------------------------------------------------------
