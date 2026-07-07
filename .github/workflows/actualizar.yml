@@ -26,7 +26,7 @@ on:
   # Ejecución automática mediante horario.
   schedule:    
     # Todos los días a las 08:00 a. m. (hora de Perú)
-    - cron: '0 13 * * *'
+    - cron: '0 11 * * *'
 
     # Revisión nocturna desde las 10:30 p. m. hasta las 11:45 p. m. (hora de Perú)
     - cron: '30,45 22 * * *'
@@ -40,7 +40,7 @@ on:
     # Revisión final a las 11:59 p. m. (hora de Perú)
     - cron: '59 4 * * *'
     # Todos los días a las 08:00 a. m. (hora de Perú)
-    - cron: '0 13 * * *'
+    #- cron: '0 13 * * *'
 
 
     # Todos los días a las 22:15 (hora de Perú)
