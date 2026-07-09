@@ -28,14 +28,13 @@ on:
     # Todos los días a las 08:00 a. m. (hora de Perú)
     - cron: '0 11 * * *'
 
-    # Revisión nocturna desde las 10:30 p. m. hasta las 11:45 p. m. (hora de Perú)
-    - cron: '30,45 22 * * *'
+    # Revisión nocturna desde las 10:30 p. m. hasta las 11:45 p. m. (hora de Perú)  
     - cron: '0,15,30,45 23 * * *'
     - cron: '0,15,30,45 0 * * *'
 
     # Revisión nocturna desde las 10:30 p. m. hasta las 11:45 p. m. (hora de Perú)
-    #- cron: '30,45 3 * * *'
-    #- cron: '0,15,30,45 4 * * *'
+    - cron: '30,45 3 * * *'
+    - cron: '0,15,30,45 4 * * *'
 
     # Revisión final a las 11:59 p. m. (hora de Perú)
     - cron: '59 4 * * *'
