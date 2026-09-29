@@ -43,52 +43,57 @@ def descargar_html():
 
 def obtener_sorteo_y_fecha(html):
     """
-    Busca el bloque principal del sorteo usando como bandera el texto
-    'Tinka Sorteo'. Luego extrae:
+    Busca el texto que contiene 'Tinka Sorteo' sin depender
+    de una etiqueta HTML específica.
+
+    Extrae:
         - número de sorteo
         - fecha del sorteo
     """
+
     soup = BeautifulSoup(html, "html.parser")
 
     print()
-    print("[DEBUG] ¿Existe 'Tinka Sorteo' en el HTML?:",
-          "Tinka Sorteo" in html)
-
-    print()
-    print("[DEBUG] Elementos que contienen 'Tinka Sorteo':")
+    info("Buscando número y fecha del sorteo...")
 
     elementos = soup.find_all(
         string=lambda texto: texto and "Tinka Sorteo" in texto
     )
 
     for elemento in elementos:
-        print("[DEBUG] Etiqueta:", elemento.parent.name)
-        print("[DEBUG] Texto:", elemento.parent.get_text(" ", strip=True))
-    
-    titulos = soup.find_all("h3")
 
-    print()
-    info(f"H3 encontrados: {len(titulos)}")
+        texto = elemento.strip()
 
-    for i, titulo in enumerate(titulos, start=1):
-        texto = titulo.get_text(" ", strip=True)
-        print(f"[DEBUG] H3 #{i}: {texto}")
+        print(f"[DEBUG] Texto encontrado: {texto}")
 
-        if "Tinka Sorteo" not in texto:
-            continue
+        patron = (
+            r"Tinka\s+Sorteo\s+(\d+)"
+            r"\s*,\s*Fecha:\s*"
+            r"(\d{1,2}/\d{1,2}/\d{4})"
+        )
 
-        # Más tolerante: acepta espacios variables y no depende
-        # de que después de la fecha no haya más texto.
-        patron = r"Tinka\s+Sorteo\s+(\d+)\s*,\s*Fecha:\s*(\d{1,2}/\d{1,2}/\d{4})"
-        resultado = re.search(patron, texto, re.IGNORECASE)
+        resultado = re.search(
+            patron,
+            texto,
+            re.IGNORECASE
+        )
 
         if resultado:
+
             numero_sorteo = int(resultado.group(1))
             fecha = resultado.group(2)
-            print(f"[DEBUG] Coincidencia encontrada: sorteo={numero_sorteo}, fecha={fecha}")
+
+            print(
+                f"[DEBUG] Coincidencia encontrada: "
+                f"sorteo={numero_sorteo}, fecha={fecha}"
+            )
+
             return numero_sorteo, fecha
 
-        print("[DEBUG] El H3 contiene 'Tinka Sorteo' pero no coincidió con el patrón.")
+        print(
+            "[DEBUG] Se encontró 'Tinka Sorteo', "
+            "pero no coincidió con el patrón."
+        )
 
     return None, None
 
