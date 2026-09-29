@@ -49,6 +49,11 @@ def obtener_sorteo_y_fecha(html):
         - fecha del sorteo
     """
     soup = BeautifulSoup(html, "html.parser")
+
+    print()
+    print("[DEBUG] ¿Existe 'Tinka Sorteo' en el HTML?:",
+          "Tinka Sorteo" in html)
+    
     titulos = soup.find_all("h3")
 
     print()
