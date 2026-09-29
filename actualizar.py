@@ -53,6 +53,17 @@ def obtener_sorteo_y_fecha(html):
     print()
     print("[DEBUG] ¿Existe 'Tinka Sorteo' en el HTML?:",
           "Tinka Sorteo" in html)
+
+    print()
+    print("[DEBUG] Elementos que contienen 'Tinka Sorteo':")
+
+    elementos = soup.find_all(
+        string=lambda texto: texto and "Tinka Sorteo" in texto
+    )
+
+    for elemento in elementos:
+        print("[DEBUG] Etiqueta:", elemento.parent.name)
+        print("[DEBUG] Texto:", elemento.parent.get_text(" ", strip=True))
     
     titulos = soup.find_all("h3")
 
