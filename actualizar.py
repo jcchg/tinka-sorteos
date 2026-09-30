@@ -66,37 +66,37 @@ def obtener_sorteo_y_fecha(html):
 
         print(f"[DEBUG] Texto encontrado: {texto}")
 
-        print("[DEBUG] Elemento padre completo:")
-        print(elemento.parent)
-
-        patron = (
-            r"Tinka\s+Sorteo\s+(\d+)"
-            r"\s*,\s*Fecha:\s*"
-            r"(\d{1,2}/\d{1,2}/\d{4})"
-        )
-
-        resultado = re.search(
-            patron,
+        # Buscar el número del sorteo
+        resultado_sorteo = re.search(
+            r"Tinka\s+Sorteo\s+(\d+)",
             texto,
             re.IGNORECASE
         )
 
-        if resultado:
-
-            numero_sorteo = int(resultado.group(1))
-            fecha = resultado.group(2)
-
+        if not resultado_sorteo:
             print(
-                f"[DEBUG] Coincidencia encontrada: "
-                f"sorteo={numero_sorteo}, fecha={fecha}"
+                "[DEBUG] Se encontró 'Tinka Sorteo', "
+                "pero no se pudo obtener el número."
             )
+            continue
 
-            return numero_sorteo, fecha
+        numero_sorteo = int(resultado_sorteo.group(1))
+
+        # La fecha está actualmente dentro de una etiqueta <time>
+        fecha_elemento = elemento.parent.find("time")
+
+        if fecha_elemento is None:
+            print("[DEBUG] No se encontró la etiqueta <time>.")
+            continue
+
+        fecha = fecha_elemento.get_text(strip=True)
 
         print(
-            "[DEBUG] Se encontró 'Tinka Sorteo', "
-            "pero no coincidió con el patrón."
+            f"[DEBUG] Coincidencia encontrada: "
+            f"sorteo={numero_sorteo}, fecha={fecha}"
         )
+
+        return numero_sorteo, fecha
 
     return None, None
 
