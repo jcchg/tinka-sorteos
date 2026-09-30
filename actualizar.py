@@ -113,6 +113,17 @@ def obtener_numeros(html):
     """
     soup = BeautifulSoup(html, "html.parser")
 
+    print()
+    print("[DEBUG] Buscando números de la jugada ganadora...")
+
+    elementos = soup.find_all(
+    string=lambda texto: texto and "Tinka Sorteo" in texto
+    )
+
+for elemento in elementos:
+    print("[DEBUG] Elemento padre:")
+    print(elemento.parent.parent)
+
     titulos = soup.find_all("h3")
 
     for titulo in titulos:
