@@ -105,52 +105,50 @@ def obtener_numeros(html):
     """
     Obtiene los 6 números de la jugada ganadora.
 
-    Estrategia:
-    1. Buscar el h3 que contiene 'Tinka Sorteo'.
-    2. Ir al primer <p> que viene después de ese h3.
-       Ese <p> contiene únicamente los 6 números de la jugada ganadora.
-    3. Ignorar los números del bloque 'Sí o Sí' y 'Boliyapa'.
+    Busca el elemento que contiene 'Tinka Sorteo' y,
+    dentro de la misma tarjeta de resultados, busca
+    el párrafo con clase 'balls'.
     """
-    soup = BeautifulSoup(html, "html.parser")
 
-    print()
-    print("[DEBUG] Buscando números de la jugada ganadora...")
+    soup = BeautifulSoup(html, "html.parser")
 
     elementos = soup.find_all(
         string=lambda texto: texto and "Tinka Sorteo" in texto
     )
 
     for elemento in elementos:
-        print("[DEBUG] Elemento padre:")
-        print(elemento.parent.parent)
 
-    titulos = soup.find_all("h3")
+        tarjeta = elemento.find_parent("section", class_="result-card")
 
-    for titulo in titulos:
-        texto = titulo.get_text(" ", strip=True)
-
-        if "Tinka Sorteo" not in texto:
+        if tarjeta is None:
+            print("[DEBUG] No se encontró la tarjeta de resultados.")
             continue
 
-        # El primer <p> después del título contiene los 6 números
-        # de la jugada ganadora.
-        parrafo = titulo.find_next("p")
+        parrafo = tarjeta.find("p", class_="balls")
+
         if parrafo is None:
-            return None
+            print("[DEBUG] No se encontró el bloque de números.")
+            continue
 
         numeros = []
 
-        for span in parrafo.find_all("span"):
-            t = span.get_text(strip=True)
+        for span in parrafo.find_all("span", class_="ball"):
+            texto_numero = span.get_text(strip=True)
 
-            # Aceptar números como 06, 03, etc.
-            if t.isdigit():
-                numeros.append(int(t))
+            if texto_numero.isdigit():
+                numeros.append(int(texto_numero))
+
+        print(f"[DEBUG] Números encontrados: {numeros}")
 
         if len(numeros) != 6:
+            print(
+                f"[DEBUG] Se esperaban 6 números, "
+                f"pero se encontraron {len(numeros)}."
+            )
             return None
 
         numeros.sort()
+
         return numeros
 
     return None
