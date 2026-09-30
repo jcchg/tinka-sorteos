@@ -66,6 +66,9 @@ def obtener_sorteo_y_fecha(html):
 
         print(f"[DEBUG] Texto encontrado: {texto}")
 
+        print("[DEBUG] Elemento padre completo:")
+        print(elemento.parent)
+
         patron = (
             r"Tinka\s+Sorteo\s+(\d+)"
             r"\s*,\s*Fecha:\s*"
