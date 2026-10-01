@@ -188,6 +188,15 @@ def obtener_desde_peruyello():
 
     soup = BeautifulSoup(respuesta.text, "html.parser")
 
+    print()
+    print("[DEBUG] Buscando información del sorteo en PeruYello...")
+
+    elementos = soup.find_all(string=lambda texto: texto and "1337" in texto)
+
+    for elemento in elementos:
+        print("[DEBUG] Texto encontrado:", elemento.strip())
+        print(elemento.parent)
+
     texto_pagina = soup.get_text(" ", strip=True)
 
     # Buscar el número del sorteo
