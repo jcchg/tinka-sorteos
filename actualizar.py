@@ -200,17 +200,27 @@ def obtener_desde_peruyello():
     texto_pagina = soup.get_text(" ", strip=True)
 
     # Buscar el número del sorteo
-    resultado_sorteo = re.search(
-        r"Tinka\s+Números\s+Ganadores\s+(\d+)",
-        texto_pagina,
-        re.IGNORECASE
+   numero_elemento = soup.find(
+        "span",
+        class_="draw_no"
     )
 
-    if not resultado_sorteo:
+    if numero_elemento is None:
         error("PerúYello: no se encontró el número del sorteo.")
         return None
+    
+    sorteo_texto = numero_elemento.get_text(strip=True)
+    
+    if not sorteo_texto.isdigit():
+        error(
+            f"PerúYello: el número del sorteo no es válido: "
+            f"{sorteo_texto}"
+        )
+        return None
 
-    sorteo = int(resultado_sorteo.group(1))
+    sorteo = int(sorteo_texto)
+
+    print(f"[DEBUG] Número de sorteo encontrado: {sorteo}")
 
     # Buscar la fecha
     resultado_fecha = re.search(
