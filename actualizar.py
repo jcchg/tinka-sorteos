@@ -181,7 +181,7 @@ def obtener_desde_peruyello():
         timeout=15
      )
 
-        respuesta.raise_for_status()
+    respuesta.raise_for_status()
 
     except Exception as e:
         error(f"No se pudo consultar PerúYello: {e}")
