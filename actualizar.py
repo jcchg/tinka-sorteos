@@ -200,7 +200,7 @@ def obtener_desde_peruyello():
     texto_pagina = soup.get_text(" ", strip=True)
 
     # Buscar el número del sorteo
-   numero_elemento = soup.find(
+    numero_elemento = soup.find(
         "span",
         class_="draw_no"
     )
