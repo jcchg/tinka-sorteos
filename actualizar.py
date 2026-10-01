@@ -259,7 +259,7 @@ def obtener_desde_peruyello():
         return None
 
     fecha = f"{dia.zfill(2)}/{mes}/{anio}"
-
+"""
     print()
     print("[DEBUG] Buscando bloques de números en PerúYello...")
 
@@ -273,6 +273,7 @@ def obtener_desde_peruyello():
         ):
             print("[DEBUG] Elemento encontrado:")
             print(elemento)
+"""
 
         # Buscar el bloque de números ganadores
     numeros_titulo = soup.find(
