@@ -274,26 +274,48 @@ def obtener_desde_peruyello():
             print("[DEBUG] Elemento encontrado:")
             print(elemento)
 
-    # Buscar los números ganadores
-    patron_numeros = re.search(
-        r"Tinka\s+Números\s+Ganadores\s+\d+"
-        r"(.*?)"
-        r"\+\s*\d+"
-        r"\s+Tinka\s+Si\s+o\s+Si",
-        texto_pagina,
-        re.IGNORECASE
+        # Buscar el bloque de números ganadores
+    numeros_titulo = soup.find(
+        "div",
+        class_="numbers_title"
     )
 
-    if not patron_numeros:
-        error("PerúYello: no se encontraron los números.")
+    if numeros_titulo is None:
+        error("PerúYello: no se encontró el título de números ganadores.")
         return None
 
-    bloque_numeros = patron_numeros.group(1)
+    texto_titulo = numeros_titulo.get_text(" ", strip=True)
 
-    numeros = [
-        int(numero)
-        for numero in re.findall(r"\b\d{1,2}\b", bloque_numeros)
-    ]
+    print(f"[DEBUG] Título encontrado: {texto_titulo}")
+
+    # La caja que contiene el título también contiene
+    # los 6 números ganadores y el número adicional.
+    bloque_numeros = numeros_titulo.parent
+
+    elementos_numeros = bloque_numeros.find_all(
+        "div",
+        class_=lambda clases: clases and any(
+            clase in clases
+            for clase in [
+                "bbb1",
+                "bbb2",
+                "bbb3",
+                "bbb4",
+                "bbb5",
+                "bbb6"
+            ]
+        )
+    )
+
+    numeros = []
+
+    for elemento in elementos_numeros:
+        texto_numero = elemento.get_text(strip=True)
+
+        if texto_numero.isdigit():
+            numeros.append(int(texto_numero))
+
+    print(f"[DEBUG] Números encontrados en PerúYello: {numeros}")
 
     if len(numeros) != 6:
         error(
@@ -302,6 +324,7 @@ def obtener_desde_peruyello():
         )
         return None
 
+    numeros.sort()
     numeros.sort()
 
     ok("Datos encontrados en PerúYello.")
