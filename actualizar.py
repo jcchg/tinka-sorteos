@@ -169,10 +169,17 @@ def obtener_desde_peruyello():
     info("Consultando fuente secundaria: PerúYello...")
 
     try:
-        respuesta = requests.get(
-            URL_PERUYELLO,
-            timeout=15
+       respuesta = requests.get(
+    URL_PERUYELLO,
+    headers={
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/154.0.0.0 Safari/537.36"
         )
+    },
+    timeout=15
+    )
 
         respuesta.raise_for_status()
 
