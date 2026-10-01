@@ -260,6 +260,20 @@ def obtener_desde_peruyello():
 
     fecha = f"{dia.zfill(2)}/{mes}/{anio}"
 
+    print()
+    print("[DEBUG] Buscando bloques de números en PerúYello...")
+
+for elemento in soup.find_all(["span", "div", "p", "li"]):
+
+    texto_elemento = elemento.get_text(" ", strip=True)
+
+    if texto_elemento and any(
+        numero in texto_elemento
+        for numero in ["43", "44", "36", "40", "12", "05"]
+    ):
+        print("[DEBUG] Elemento encontrado:")
+        print(elemento)
+
     # Buscar los números ganadores
     patron_numeros = re.search(
         r"Tinka\s+Números\s+Ganadores\s+\d+"
