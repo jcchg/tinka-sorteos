@@ -153,6 +153,126 @@ def obtener_numeros(html):
 
     return None
 
+def obtener_desde_peruyello():
+    """
+    Fuente secundaria de respaldo.
+
+    Obtiene desde PerúYello:
+        - número de sorteo
+        - fecha
+        - 6 números ganadores
+    """
+
+    URL_PERUYELLO = "https://www.peruyello.com/lottery/results/tinka"
+
+    print()
+    info("Consultando fuente secundaria: PerúYello...")
+
+    try:
+        respuesta = requests.get(
+            URL_PERUYELLO,
+            timeout=15
+        )
+
+        respuesta.raise_for_status()
+
+    except Exception as e:
+        error(f"No se pudo consultar PerúYello: {e}")
+        return None
+
+    soup = BeautifulSoup(respuesta.text, "html.parser")
+
+    texto_pagina = soup.get_text(" ", strip=True)
+
+    # Buscar el número del sorteo
+    resultado_sorteo = re.search(
+        r"Tinka\s+Números\s+Ganadores\s+(\d+)",
+        texto_pagina,
+        re.IGNORECASE
+    )
+
+    if not resultado_sorteo:
+        error("PerúYello: no se encontró el número del sorteo.")
+        return None
+
+    sorteo = int(resultado_sorteo.group(1))
+
+    # Buscar la fecha
+    resultado_fecha = re.search(
+        r"(\d{1,2})\s+de\s+([A-Za-z]+)\s+(\d{4})",
+        texto_pagina,
+        re.IGNORECASE
+    )
+
+    if not resultado_fecha:
+        error("PerúYello: no se encontró la fecha.")
+        return None
+
+    dia = resultado_fecha.group(1)
+    mes_texto = resultado_fecha.group(2).lower()
+    anio = resultado_fecha.group(3)
+
+    meses = {
+        "enero": "01",
+        "febrero": "02",
+        "marzo": "03",
+        "abril": "04",
+        "mayo": "05",
+        "junio": "06",
+        "julio": "07",
+        "agosto": "08",
+        "septiembre": "09",
+        "octubre": "10",
+        "noviembre": "11",
+        "diciembre": "12"
+    }
+
+    mes = meses.get(mes_texto)
+
+    if mes is None:
+        error(f"PerúYello: mes desconocido: {mes_texto}")
+        return None
+
+    fecha = f"{dia.zfill(2)}/{mes}/{anio}"
+
+    # Buscar los números ganadores
+    patron_numeros = re.search(
+        r"Tinka\s+Números\s+Ganadores\s+\d+"
+        r"(.*?)"
+        r"\+\s*\d+"
+        r"\s+Tinka\s+Si\s+o\s+Si",
+        texto_pagina,
+        re.IGNORECASE
+    )
+
+    if not patron_numeros:
+        error("PerúYello: no se encontraron los números.")
+        return None
+
+    bloque_numeros = patron_numeros.group(1)
+
+    numeros = [
+        int(numero)
+        for numero in re.findall(r"\b\d{1,2}\b", bloque_numeros)
+    ]
+
+    if len(numeros) != 6:
+        error(
+            f"PerúYello: se esperaban 6 números, "
+            f"pero se encontraron {len(numeros)}."
+        )
+        return None
+
+    numeros.sort()
+
+    ok("Datos encontrados en PerúYello.")
+
+    print(f"[DEBUG] Sorteo PerúYello: {sorteo}")
+    print(f"[DEBUG] Fecha PerúYello: {fecha}")
+    print(f"[DEBUG] Números PerúYello: {numeros}")
+
+    return sorteo, fecha, numeros
+
 
 def obtener_ganador(html):
     soup = BeautifulSoup(html, "html.parser")
@@ -344,6 +464,10 @@ def main():
         error(f"No se pudo actualizar sorteos.txt: {e}")
         return
 
-
+"""
 if __name__ == "__main__":
     main()
+"""    
+
+if __name__ == "__main__":
+    obtener_desde_peruyello()
