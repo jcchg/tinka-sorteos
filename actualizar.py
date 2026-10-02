@@ -8,8 +8,9 @@ Autor : Carlos + ChatGPT
 """
 
 import requests
-from bs4 import BeautifulSoup
 import re
+from bs4 import BeautifulSoup
+from datetime import datetime
 
 VERSION = "1.2.0"
 
@@ -322,6 +323,215 @@ def obtener_desde_peruyello():
     return sorteo, fecha, numeros
 
 
+def obtener_ganador_elcomercio(fecha):
+    """
+    Fuente secundaria para determinar si hubo ganador
+    del pozo principal de La Tinka.
+
+    Recibe:
+        fecha -> fecha del sorteo en formato DD/MM/YYYY
+
+    Retorna:
+        0    -> No hubo ganador del pozo.
+        1    -> Hubo ganador del pozo.
+        None -> No fue posible determinarlo.
+    """
+
+    print()
+    info("Consultando fuente secundaria: El Comercio...")
+
+    # ----------------------------------------------------------
+    # Convertir la fecha DD/MM/YYYY a una fecha que podamos
+    # utilizar para buscar el artículo.
+    # ----------------------------------------------------------
+
+    try:
+        fecha_obj = datetime.strptime(fecha, "%d/%m/%Y")
+
+    except ValueError:
+        error(f"Fecha no válida para El Comercio: {fecha}")
+        return None
+
+    dia = fecha_obj.day
+    mes = fecha_obj.month
+    anio = fecha_obj.year
+
+    meses = {
+        1: "enero",
+        2: "febrero",
+        3: "marzo",
+        4: "abril",
+        5: "mayo",
+        6: "junio",
+        7: "julio",
+        8: "agosto",
+        9: "septiembre",
+        10: "octubre",
+        11: "noviembre",
+        12: "diciembre"
+    }
+
+    mes_texto = meses[mes]
+
+    # ----------------------------------------------------------
+    # Buscamos el artículo de El Comercio mediante su buscador.
+    # ----------------------------------------------------------
+
+    consulta = (
+        f"La Tinka resultados {dia} de {mes_texto} "
+        f"de {anio}"
+    )
+
+    URL_BUSQUEDA = (
+        "https://www.google.com/search?q="
+        + requests.utils.quote(
+            f"site:elcomercio.pe/respuestas/loterias/ "
+            f"{consulta}"
+        )
+    )
+
+    try:
+        respuesta = requests.get(
+            URL_BUSQUEDA,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/154.0.0.0 Safari/537.36"
+                )
+            },
+            timeout=15
+        )
+
+        respuesta.raise_for_status()
+
+    except Exception as e:
+        error(f"No se pudo buscar El Comercio: {e}")
+        return None
+
+    soup_busqueda = BeautifulSoup(
+        respuesta.text,
+        "html.parser"
+    )
+
+    # ----------------------------------------------------------
+    # Buscar enlaces que pertenezcan a El Comercio y que sean
+    # artículos de La Tinka.
+    # ----------------------------------------------------------
+
+    enlaces = soup_busqueda.find_all("a")
+
+    url_articulo = None
+
+    for enlace in enlaces:
+
+        href = enlace.get("href")
+
+        if not href:
+            continue
+
+        if "elcomercio.pe/respuestas/loterias/" not in href:
+            continue
+
+        if "tinka" not in href.lower():
+            continue
+
+        url_articulo = href
+        break
+
+    if url_articulo is None:
+        error("El Comercio: no se encontró el artículo de La Tinka.")
+        return None
+
+    print(f"[DEBUG] Artículo encontrado:")
+    print(url_articulo)
+
+    # ----------------------------------------------------------
+    # Descargar el artículo encontrado.
+    # ----------------------------------------------------------
+
+    try:
+        respuesta_articulo = requests.get(
+            url_articulo,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/154.0.0.0 Safari/537.36"
+                )
+            },
+            timeout=15
+        )
+
+        respuesta_articulo.raise_for_status()
+
+    except Exception as e:
+        error(f"No se pudo descargar el artículo de El Comercio: {e}")
+        return None
+
+    soup_articulo = BeautifulSoup(
+        respuesta_articulo.text,
+        "html.parser"
+    )
+
+    texto = soup_articulo.get_text(
+        " ",
+        strip=True
+    ).lower()
+
+    # ----------------------------------------------------------
+    # Buscar primero las expresiones que indican que NO hubo
+    # ganador.
+    # ----------------------------------------------------------
+
+    frases_sin_ganador = [
+        "no hay ganador del pozo",
+        "no hubo ganador del pozo",
+        "no hubo ganadores con 6 aciertos",
+        "no hubo ganador con 6 aciertos"
+    ]
+
+    for frase in frases_sin_ganador:
+
+        if frase in texto:
+
+            print(f"[DEBUG] Encontrado: {frase}")
+
+            ok("El Comercio confirma que no hubo ganador.")
+            return 0
+
+    # ----------------------------------------------------------
+    # Buscar expresiones que indiquen que SÍ hubo ganador.
+    # ----------------------------------------------------------
+
+    frases_con_ganador = [
+        "hubo ganador del pozo",
+        "hubo ganadores del pozo",
+        "ganador del pozo millonario",
+        "ganadores del pozo millonario"
+    ]
+
+    for frase in frases_con_ganador:
+
+        if frase in texto:
+
+            print(f"[DEBUG] Encontrado: {frase}")
+
+            ok("El Comercio confirma que hubo ganador.")
+            return 1
+
+    # ----------------------------------------------------------
+    # No encontramos ninguna expresión conocida.
+    # ----------------------------------------------------------
+
+    error(
+        "El Comercio: no fue posible determinar "
+        "si hubo ganador del pozo."
+    )
+
+    return None
+
+
 def obtener_ganador(html):
     soup = BeautifulSoup(html, "html.parser")
 
@@ -516,6 +726,13 @@ def main():
 if __name__ == "__main__":
     main()
 """    
-
+"""
 if __name__ == "__main__":
     obtener_desde_peruyello()
+"""
+
+if __name__ == "__main__":
+    ganador = obtener_ganador_elcomercio("30/09/2026")
+
+    print()
+    print("RESULTADO GANADOR:", ganador)
