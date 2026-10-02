@@ -616,55 +616,106 @@ def main():
     print(f" Versión {VERSION}")
     print("=" * 50)
 
+        # ==========================================================
+    # FUENTE PRINCIPAL: TinkaResultados
+    # ==========================================================
+
     html = descargar_html()
+
+    usar_fuente_secundaria = False
+
     if html is None:
-        return
+        error("No fue posible descargar TinkaResultados.")
+        usar_fuente_secundaria = True
 
-    print()
-    info(f"HTML recibido: {len(html)} caracteres")
-
-    with open("pagina.html", "w", encoding="utf-8") as archivo:
-        archivo.write(html)
-
-    ok("Archivo pagina.html creado.")
-
-    sorteo, fecha = obtener_sorteo_y_fecha(html)
-
-    print()
-
-    if sorteo is None:
-        error("No fue posible obtener el número del sorteo.")
-        return
-
-    ok("Sorteo encontrado.")
-    print(f"Número de sorteo: {sorteo}")
-    print(f"Fecha: {fecha}")
-
-    numeros = obtener_numeros(html)
-    print()
-
-    if numeros is None:
-        error("No fue posible obtener los números.")
-        return
-
-    ok("Números encontrados.")
-    print("Números ordenados:")
-    print(" - ".join(map(str, numeros)))
-
-    ganador = obtener_ganador(html)
-    print()
-
-    if ganador is None:
-        error("No fue posible obtener el valor de 6 aciertos.")
-        return
-
-    ok("Estado del pozo encontrado.")
-
-    if ganador == 1:
-        print("Hubo ganador del pozo principal.")
     else:
-        print("No hubo ganador del pozo principal.")
+        print()
+        info(f"HTML recibido: {len(html)} caracteres")
 
+        with open("pagina.html", "w", encoding="utf-8") as archivo:
+            archivo.write(html)
+
+        ok("Archivo pagina.html creado.")
+
+        sorteo, fecha = obtener_sorteo_y_fecha(html)
+
+        print()
+
+        if sorteo is None:
+            error("No fue posible obtener el número del sorteo.")
+            usar_fuente_secundaria = True
+
+        else:
+            ok("Sorteo encontrado.")
+            print(f"Número de sorteo: {sorteo}")
+            print(f"Fecha: {fecha}")
+
+            numeros = obtener_numeros(html)
+
+            print()
+
+            if numeros is None:
+                error("No fue posible obtener los números.")
+                usar_fuente_secundaria = True
+
+            else:
+                ok("Números encontrados.")
+                print("Números ordenados:")
+                print(" - ".join(map(str, numeros)))
+
+                ganador = obtener_ganador(html)
+
+                print()
+
+                if ganador is None:
+                    error(
+                        "No fue posible obtener el valor "
+                        "de 6 aciertos."
+                    )
+                    usar_fuente_secundaria = True
+
+                else:
+                    ok("Estado del pozo encontrado.")
+
+                    if ganador == 1:
+                        print("Hubo ganador del pozo principal.")
+                    else:
+                        print("No hubo ganador del pozo principal.")
+
+    # ==========================================================
+    # FUENTE SECUNDARIA: Loto-Resultados
+    # ==========================================================
+
+    if usar_fuente_secundaria:
+
+        print()
+        info("La fuente principal no pudo proporcionar todos los datos.")
+        info("Se utilizará Loto-Resultados como fuente secundaria.")
+
+        resultado_secundario = obtener_desde_loto_resultados()
+
+        if resultado_secundario is None:
+            error(
+                "Tampoco fue posible obtener los datos "
+                "desde Loto-Resultados."
+            )
+            return
+
+        sorteo, fecha, numeros, ganador = resultado_secundario
+
+        print()
+        ok("Datos obtenidos desde la fuente secundaria.")
+
+        print(f"Número de sorteo: {sorteo}")
+        print(f"Fecha: {fecha}")
+
+        print("Números ordenados:")
+        print(" - ".join(map(str, numeros)))
+
+        if ganador == 1:
+            print("Hubo ganador del pozo principal.")
+        else:
+            print("No hubo ganador del pozo principal.")
     fecha = normalizar_fecha(fecha)
     lineas = crear_lineas_sorteo(numeros, fecha, ganador)
     # ==========================================================
@@ -732,27 +783,7 @@ def main():
         error(f"No se pudo actualizar sorteos.txt: {e}")
         return
 
-"""
+
 if __name__ == "__main__":
     main()
-"""    
-"""
-if __name__ == "__main__":
-    obtener_desde_peruyello()
-"""
-
-if __name__ == "__main__":
-    resultado = obtener_desde_loto_resultados()
-
-    print()
-    print("=" * 50)
-    print("RESULTADO DE LA PRUEBA")
-    print("=" * 50)
-
-    if resultado is not None:
-        sorteo, fecha, numeros, ganador = resultado
-
-        print(f"Sorteo  : {sorteo}")
-        print(f"Fecha   : {fecha}")
-        print(f"Números : {numeros}")
-        print(f"Ganador : {ganador}")
+   
