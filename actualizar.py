@@ -312,7 +312,6 @@ def obtener_desde_peruyello():
         return None
 
     numeros.sort()
-    numeros.sort()
 
     ok("Datos encontrados en PerúYello.")
 
@@ -341,8 +340,7 @@ def obtener_ganador_elcomercio(fecha):
     info("Consultando fuente secundaria: El Comercio...")
 
     # ----------------------------------------------------------
-    # Convertir la fecha DD/MM/YYYY a una fecha que podamos
-    # utilizar para buscar el artículo.
+    # Convertir la fecha a día, mes y año.
     # ----------------------------------------------------------
 
     try:
@@ -374,20 +372,17 @@ def obtener_ganador_elcomercio(fecha):
     mes_texto = meses[mes]
 
     # ----------------------------------------------------------
-    # Buscamos el artículo de El Comercio mediante su buscador.
+    # Buscar el artículo en Google.
     # ----------------------------------------------------------
 
     consulta = (
-        f"La Tinka resultados {dia} de {mes_texto} "
-        f"de {anio}"
+        f'site:elcomercio.pe/respuestas/loterias/ '
+        f'"La Tinka" "{dia}" "{mes_texto}" "{anio}"'
     )
 
     URL_BUSQUEDA = (
         "https://www.google.com/search?q="
-        + requests.utils.quote(
-            f"site:elcomercio.pe/respuestas/loterias/ "
-            f"{consulta}"
-        )
+        + requests.utils.quote(consulta)
     )
 
     try:
@@ -406,7 +401,7 @@ def obtener_ganador_elcomercio(fecha):
         respuesta.raise_for_status()
 
     except Exception as e:
-        error(f"No se pudo buscar El Comercio: {e}")
+        error(f"No se pudo consultar Google: {e}")
         return None
 
     soup_busqueda = BeautifulSoup(
@@ -414,9 +409,10 @@ def obtener_ganador_elcomercio(fecha):
         "html.parser"
     )
 
+    print("[DEBUG] Buscando artículo de El Comercio...")
+
     # ----------------------------------------------------------
-    # Buscar enlaces que pertenezcan a El Comercio y que sean
-    # artículos de La Tinka.
+    # Buscar los resultados reales de Google.
     # ----------------------------------------------------------
 
     enlaces = soup_busqueda.find_all("a")
@@ -430,7 +426,14 @@ def obtener_ganador_elcomercio(fecha):
         if not href:
             continue
 
-        if "elcomercio.pe/respuestas/loterias/" not in href:
+        # Ignorar enlaces internos de Google.
+        if href.startswith("/search"):
+            continue
+
+        if "elcomercio.pe" not in href:
+            continue
+
+        if "/respuestas/loterias/" not in href:
             continue
 
         if "tinka" not in href.lower():
@@ -440,14 +443,15 @@ def obtener_ganador_elcomercio(fecha):
         break
 
     if url_articulo is None:
-        error("El Comercio: no se encontró el artículo de La Tinka.")
+        error("El Comercio: no se encontró el artículo.")
         return None
 
-    print(f"[DEBUG] Artículo encontrado:")
+    print()
+    print("[DEBUG] Artículo encontrado:")
     print(url_articulo)
 
     # ----------------------------------------------------------
-    # Descargar el artículo encontrado.
+    # Descargar el artículo.
     # ----------------------------------------------------------
 
     try:
@@ -466,7 +470,9 @@ def obtener_ganador_elcomercio(fecha):
         respuesta_articulo.raise_for_status()
 
     except Exception as e:
-        error(f"No se pudo descargar el artículo de El Comercio: {e}")
+        error(
+            f"No se pudo descargar el artículo de El Comercio: {e}"
+        )
         return None
 
     soup_articulo = BeautifulSoup(
@@ -480,28 +486,34 @@ def obtener_ganador_elcomercio(fecha):
     ).lower()
 
     # ----------------------------------------------------------
-    # Buscar primero las expresiones que indican que NO hubo
-    # ganador.
+    # Mostrar algunas coincidencias útiles durante la prueba.
+    # ----------------------------------------------------------
+
+    print()
+    print("[DEBUG] Buscando información sobre 6 aciertos...")
+
+    # ----------------------------------------------------------
+    # Frases que indican que NO hubo ganador.
     # ----------------------------------------------------------
 
     frases_sin_ganador = [
         "no hay ganador del pozo",
         "no hubo ganador del pozo",
         "no hubo ganadores con 6 aciertos",
-        "no hubo ganador con 6 aciertos"
+        "no hubo ganador con 6 aciertos",
+        "no hay ganador con 6 aciertos"
     ]
 
     for frase in frases_sin_ganador:
 
         if frase in texto:
-
             print(f"[DEBUG] Encontrado: {frase}")
 
             ok("El Comercio confirma que no hubo ganador.")
             return 0
 
     # ----------------------------------------------------------
-    # Buscar expresiones que indiquen que SÍ hubo ganador.
+    # Frases que indican que SÍ hubo ganador.
     # ----------------------------------------------------------
 
     frases_con_ganador = [
@@ -514,7 +526,6 @@ def obtener_ganador_elcomercio(fecha):
     for frase in frases_con_ganador:
 
         if frase in texto:
-
             print(f"[DEBUG] Encontrado: {frase}")
 
             ok("El Comercio confirma que hubo ganador.")
