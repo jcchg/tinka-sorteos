@@ -154,6 +154,225 @@ def obtener_numeros(html):
 
     return None
 
+def obtener_desde_loto_resultados():
+    """
+    Fuente secundaria de respaldo.
+
+    Obtiene desde Loto-Resultados:
+        - número de sorteo
+        - fecha
+        - 6 números ganadores
+        - si hubo o no ganador de 6 aciertos
+
+    Devuelve:
+        sorteo, fecha, numeros, ganador
+
+    ganador:
+        0 = no hubo ganador
+        1 = hubo uno o más ganadores
+    """
+
+    URL_LOTO_RESULTADOS = "https://loto-resultados.com/peru/la-tinka/"
+
+    print()
+    info("Consultando fuente secundaria: Loto-Resultados...")
+
+    try:
+        respuesta = requests.get(
+            URL_LOTO_RESULTADOS,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/154.0.0.0 Safari/537.36"
+                )
+            },
+            timeout=15
+        )
+
+        respuesta.raise_for_status()
+
+    except Exception as e:
+        error(f"No se pudo consultar Loto-Resultados: {e}")
+        return None
+
+    soup = BeautifulSoup(respuesta.text, "html.parser")
+
+    texto_pagina = soup.get_text(" ", strip=True)
+
+    print()
+    print("[DEBUG] Buscando información del sorteo en Loto-Resultados...")
+
+    # ==========================================================
+    # NÚMERO DEL SORTEO
+    # ==========================================================
+
+    resultado_sorteo = re.search(
+        r"La\s+Tinka\s+(\d+)",
+        texto_pagina,
+        re.IGNORECASE
+    )
+
+    if not resultado_sorteo:
+        error("Loto-Resultados: no se encontró el número del sorteo.")
+        return None
+
+    sorteo = int(resultado_sorteo.group(1))
+
+    print(f"[DEBUG] Número de sorteo encontrado: {sorteo}")
+
+    # ==========================================================
+    # FECHA
+    # ==========================================================
+
+    resultado_fecha = re.search(
+        r"La\s+Tinka\s+\d+\s+"
+        r"(?:lunes|martes|miércoles|jueves|viernes|sábado|domingo)?\s*"
+        r"(\d{1,2})\s+de\s+"
+        r"([A-Za-záéíóúÁÉÍÓÚ]+)\s+"
+        r"(\d{4})",
+        texto_pagina,
+        re.IGNORECASE
+    )
+
+    if not resultado_fecha:
+        error("Loto-Resultados: no se encontró la fecha.")
+        return None
+
+    dia = resultado_fecha.group(1)
+    mes_texto = resultado_fecha.group(2).lower()
+    anio = resultado_fecha.group(3)
+
+    meses = {
+        "enero": "01",
+        "febrero": "02",
+        "marzo": "03",
+        "abril": "04",
+        "mayo": "05",
+        "junio": "06",
+        "julio": "07",
+        "agosto": "08",
+        "septiembre": "09",
+        "setiembre": "09",
+        "octubre": "10",
+        "noviembre": "11",
+        "diciembre": "12"
+    }
+
+    mes = meses.get(mes_texto)
+
+    if mes is None:
+        error(f"Loto-Resultados: mes desconocido: {mes_texto}")
+        return None
+
+    fecha = f"{dia.zfill(2)}/{mes}/{anio}"
+
+    print(f"[DEBUG] Fecha encontrada: {fecha}")
+
+    # ==========================================================
+    # 6 NÚMEROS GANADORES
+    # ==========================================================
+
+    resultado_numeros = re.search(
+        r"Jugada\s+Ganadora(.*?)S[IÍ]\s+o\s+S[IÍ]",
+        texto_pagina,
+        re.IGNORECASE
+    )
+
+    if not resultado_numeros:
+        error(
+            "Loto-Resultados: no se encontró el bloque "
+            "de números ganadores."
+        )
+        return None
+
+    bloque_numeros = resultado_numeros.group(1)
+
+    numeros_encontrados = re.findall(
+        r"\b\d{1,2}\b",
+        bloque_numeros
+    )
+
+    numeros = [int(numero) for numero in numeros_encontrados]
+
+    print(
+        f"[DEBUG] Números encontrados en Loto-Resultados: "
+        f"{numeros}"
+    )
+
+    if len(numeros) < 6:
+        error(
+            f"Loto-Resultados: se esperaban al menos 6 números, "
+            f"pero se encontraron {len(numeros)}."
+        )
+        return None
+
+    # Los primeros 6 son los números principales.
+    numeros = numeros[:6]
+
+    numeros.sort()
+
+    print(f"[DEBUG] Números ordenados: {numeros}")
+
+    # ==========================================================
+    # GANADOR DE 6 ACIERTOS
+    # ==========================================================
+
+    ganador = None
+
+    for fila in soup.find_all("tr"):
+        columnas = fila.find_all("td")
+
+        if len(columnas) < 2:
+            continue
+
+        categoria = columnas[0].get_text(
+            " ",
+            strip=True
+        ).lower()
+
+        if categoria == "6 aciertos":
+
+            valor = columnas[1].get_text(
+                strip=True
+            )
+
+            print(
+                f"[DEBUG] Ganadores de 6 aciertos encontrados: "
+                f"{valor}"
+            )
+
+            # Si es 0, no hubo ganador.
+            if valor == "0":
+                ganador = 0
+
+            # Si hay 1 o más, para nuestro programa
+            # significa simplemente que hubo ganador.
+            elif valor.isdigit() and int(valor) >= 1:
+                ganador = 1
+
+            break
+
+    if ganador is None:
+        error(
+            "Loto-Resultados: no se encontró la cantidad "
+            "de ganadores de 6 aciertos."
+        )
+        return None
+
+    # ==========================================================
+    # RESULTADO FINAL
+    # ==========================================================
+
+    ok("Datos encontrados en Loto-Resultados.")
+
+    print(f"[DEBUG] Sorteo Loto-Resultados: {sorteo}")
+    print(f"[DEBUG] Fecha Loto-Resultados: {fecha}")
+    print(f"[DEBUG] Números Loto-Resultados: {numeros}")
+    print(f"[DEBUG] Ganador Loto-Resultados: {ganador}")
+
+    return sorteo, fecha, numeros, ganador
+
 def obtener_desde_peruyello():
     """
     Fuente secundaria de respaldo.
@@ -321,226 +540,6 @@ def obtener_desde_peruyello():
 
     return sorteo, fecha, numeros
 
-
-def obtener_ganador_elcomercio(fecha):
-    """
-    Fuente secundaria para determinar si hubo ganador
-    del pozo principal de La Tinka.
-
-    Recibe:
-        fecha -> fecha del sorteo en formato DD/MM/YYYY
-
-    Retorna:
-        0    -> No hubo ganador del pozo.
-        1    -> Hubo ganador del pozo.
-        None -> No fue posible determinarlo.
-    """
-
-    print()
-    info("Consultando fuente secundaria: El Comercio...")
-
-    # ----------------------------------------------------------
-    # Convertir la fecha a día, mes y año.
-    # ----------------------------------------------------------
-
-    try:
-        fecha_obj = datetime.strptime(fecha, "%d/%m/%Y")
-
-    except ValueError:
-        error(f"Fecha no válida para El Comercio: {fecha}")
-        return None
-
-    dia = fecha_obj.day
-    mes = fecha_obj.month
-    anio = fecha_obj.year
-
-    meses = {
-        1: "enero",
-        2: "febrero",
-        3: "marzo",
-        4: "abril",
-        5: "mayo",
-        6: "junio",
-        7: "julio",
-        8: "agosto",
-        9: "septiembre",
-        10: "octubre",
-        11: "noviembre",
-        12: "diciembre"
-    }
-
-    mes_texto = meses[mes]
-
-    # ----------------------------------------------------------
-    # Buscar el artículo en Google.
-    # ----------------------------------------------------------
-
-    consulta = (
-        f'site:elcomercio.pe/respuestas/loterias/ '
-        f'"La Tinka" "{dia}" "{mes_texto}" "{anio}"'
-    )
-
-    URL_BUSQUEDA = (
-        "https://www.google.com/search?q="
-        + requests.utils.quote(consulta)
-    )
-
-    try:
-        respuesta = requests.get(
-            URL_BUSQUEDA,
-            headers={
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/154.0.0.0 Safari/537.36"
-                )
-            },
-            timeout=15
-        )
-
-        respuesta.raise_for_status()
-
-    except Exception as e:
-        error(f"No se pudo consultar Google: {e}")
-        return None
-
-    soup_busqueda = BeautifulSoup(
-        respuesta.text,
-        "html.parser"
-    )
-
-    print("[DEBUG] Buscando artículo de El Comercio...")
-
-    # ----------------------------------------------------------
-    # Buscar los resultados reales de Google.
-    # ----------------------------------------------------------
-
-    enlaces = soup_busqueda.find_all("a")
-
-    url_articulo = None
-
-    for enlace in enlaces:
-
-        href = enlace.get("href")
-
-        if not href:
-            continue
-
-        # Ignorar enlaces internos de Google.
-        if href.startswith("/search"):
-            continue
-
-        if "elcomercio.pe" not in href:
-            continue
-
-        if "/respuestas/loterias/" not in href:
-            continue
-
-        if "tinka" not in href.lower():
-            continue
-
-        url_articulo = href
-        break
-
-    if url_articulo is None:
-        error("El Comercio: no se encontró el artículo.")
-        return None
-
-    print()
-    print("[DEBUG] Artículo encontrado:")
-    print(url_articulo)
-
-    # ----------------------------------------------------------
-    # Descargar el artículo.
-    # ----------------------------------------------------------
-
-    try:
-        respuesta_articulo = requests.get(
-            url_articulo,
-            headers={
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/154.0.0.0 Safari/537.36"
-                )
-            },
-            timeout=15
-        )
-
-        respuesta_articulo.raise_for_status()
-
-    except Exception as e:
-        error(
-            f"No se pudo descargar el artículo de El Comercio: {e}"
-        )
-        return None
-
-    soup_articulo = BeautifulSoup(
-        respuesta_articulo.text,
-        "html.parser"
-    )
-
-    texto = soup_articulo.get_text(
-        " ",
-        strip=True
-    ).lower()
-
-    # ----------------------------------------------------------
-    # Mostrar algunas coincidencias útiles durante la prueba.
-    # ----------------------------------------------------------
-
-    print()
-    print("[DEBUG] Buscando información sobre 6 aciertos...")
-
-    # ----------------------------------------------------------
-    # Frases que indican que NO hubo ganador.
-    # ----------------------------------------------------------
-
-    frases_sin_ganador = [
-        "no hay ganador del pozo",
-        "no hubo ganador del pozo",
-        "no hubo ganadores con 6 aciertos",
-        "no hubo ganador con 6 aciertos",
-        "no hay ganador con 6 aciertos"
-    ]
-
-    for frase in frases_sin_ganador:
-
-        if frase in texto:
-            print(f"[DEBUG] Encontrado: {frase}")
-
-            ok("El Comercio confirma que no hubo ganador.")
-            return 0
-
-    # ----------------------------------------------------------
-    # Frases que indican que SÍ hubo ganador.
-    # ----------------------------------------------------------
-
-    frases_con_ganador = [
-        "hubo ganador del pozo",
-        "hubo ganadores del pozo",
-        "ganador del pozo millonario",
-        "ganadores del pozo millonario"
-    ]
-
-    for frase in frases_con_ganador:
-
-        if frase in texto:
-            print(f"[DEBUG] Encontrado: {frase}")
-
-            ok("El Comercio confirma que hubo ganador.")
-            return 1
-
-    # ----------------------------------------------------------
-    # No encontramos ninguna expresión conocida.
-    # ----------------------------------------------------------
-
-    error(
-        "El Comercio: no fue posible determinar "
-        "si hubo ganador del pozo."
-    )
-
-    return None
 
 
 def obtener_ganador(html):
@@ -743,7 +742,17 @@ if __name__ == "__main__":
 """
 
 if __name__ == "__main__":
-    ganador = obtener_ganador_elcomercio("30/09/2026")
+    resultado = obtener_desde_loto_resultados()
 
     print()
-    print("RESULTADO GANADOR:", ganador)
+    print("=" * 50)
+    print("RESULTADO DE LA PRUEBA")
+    print("=" * 50)
+
+    if resultado is not None:
+        sorteo, fecha, numeros, ganador = resultado
+
+        print(f"Sorteo  : {sorteo}")
+        print(f"Fecha   : {fecha}")
+        print(f"Números : {numeros}")
+        print(f"Ganador : {ganador}")
